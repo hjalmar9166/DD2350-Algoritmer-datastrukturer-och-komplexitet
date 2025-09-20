@@ -20,11 +20,18 @@ public class ClosestWords {
                     M[i][j] = M[i-1][j-1];
                 }
                 else {
-                    M[i][j] = Math.min(M[i-1][j-1] + 1, Math.min(M[i-1][j] + 1, M[i][j-1]) + 1);
+                    int res = M[i-1][j-1];
+                    if (M[i-1][j] < res) {
+                        res = M[i-1][j];
+                    }
+                    if (M[i][j-1] < res) {
+                        res = M[i][j - 1];
+                    }
+                    M[i][j] = res + 1;
                 }
-
             }
         }
+
         return M[w2len][w1len];
     }
 
@@ -36,7 +43,6 @@ public class ClosestWords {
         M = new int[MAX_WORD_LENGTH][MAX_WORD_LENGTH];
         setBaseCase();
         String prevWord = "";
-
 
         for (String s : wordList) {
             int startRow = comparePrevWordToNewWord(prevWord, s);
@@ -61,15 +67,16 @@ public class ClosestWords {
     }
 
     private int comparePrevWordToNewWord(String prevWord, String newWord) {
-        //System.out.println(prevWord);
-        //System.out.println(newWord);
-        for (int i = 1; i < prevWord.length(); i++) {
+        if (prevWord.isEmpty()) {
+            return 1;
+        }
 
+        for (int i = 1; i < prevWord.length() + 1; i++) {
             if(prevWord.charAt(i-1) != newWord.charAt(i-1)){
                 return i;
             }
         }
-        return 1;
+        return prevWord.length();
     }
 
     int getMinDistance() {
@@ -78,5 +85,16 @@ public class ClosestWords {
 
     List<String> getClosestWords() {
         return closestWords;
+    }
+
+    private void printMatrix() {
+        StringBuilder str = new StringBuilder();
+        for (int[] row : M) {
+            for (int dist : row) {
+                str.append(dist).append(" ");
+            }
+            str.append("\n");
+        }
+        System.out.println(str);
     }
 }
