@@ -12,7 +12,8 @@ public class ClosestWords {
     int[][] M;
 
     int partDist(String w1, String w2, int w1len, int w2len, int startRow) {
-        // Hitta värdena i varje cell i matrisen.
+        // Hitta värdena i varje cell i matrisen. Om förra ordet och detta överlappar kommer startRow
+        // vara större än 1 och de först startRow rader kommer redan vara beräknade.
         for (int i = startRow; i < w2len + 1; i++) {
             for (int j = 1; j < w1len + 1; j++) {
                 // Om bokstäverna redan är samma behöver vi inte byta bokstav.
@@ -21,12 +22,15 @@ public class ClosestWords {
                 }
                 else {
                     int res = M[i-1][j-1];
+                    // Se om det editeringsavståndet är kortare för "lägga till en bokstav".
                     if (M[i-1][j] < res) {
                         res = M[i-1][j];
                     }
+                    // Se om det editeringsavståndet är kortare för "ta bort en bokstav".
                     if (M[i][j-1] < res) {
                         res = M[i][j - 1];
                     }
+                    // I alla fall lägger vi till ett då editeringssteget är 1 mer än föregående.
                     M[i][j] = res + 1;
                 }
             }
@@ -60,6 +64,7 @@ public class ClosestWords {
     }
 
     private void setBaseCase() {
+        // Sätt basfall för rader och kolumner.
         for (int i = 0; i < M.length; i++) {
             M[i][0] = i;
             M[0][i] = i;
@@ -67,11 +72,14 @@ public class ClosestWords {
     }
 
     private int comparePrevWordToNewWord(String prevWord, String newWord) {
+        // Om det inte finns något tidigare ord: börja på rad 1.
         if (prevWord.isEmpty()) {
             return 1;
         }
 
+        // Gå igenom orden bokstav för bokstav och hitta första tecken som skiljer.
         for (int i = 1; i < prevWord.length() + 1; i++) {
+            // Om bokstav i är olika.
             if(prevWord.charAt(i-1) != newWord.charAt(i-1)){
                 return i;
             }
