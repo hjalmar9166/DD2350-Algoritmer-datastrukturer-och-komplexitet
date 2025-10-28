@@ -1,3 +1,7 @@
+import java.util.LinkedList;
+import java.util.PriorityQueue;
+import java.util.Queue;
+
 /**
  * Exempel på in- och utdatahantering för maxflödeslabben i kursen
  * ADK.
@@ -80,12 +84,88 @@ public class BipRed {
 			int c = io.getInt();
 			edges[i] = new int[]{a, b, c};
 		}
+
+		int[][] f = edmondsKarp(s, t, v, edges);
+
+		io.println(v);
+		int flow = 0;
+		for (int i = 0; i < v; i++) {
+			flow += f[t][i];
+		}
+		flow = -flow;
+
+		io.println(s + " " + t + " " + flow);
+		io.println(3*flow);
+		for (int a = 0; a < v; a++) {
+			for (int b = 0; b < v; b++) {
+				if (f[a][b] == 1) {
+					io.println(a + " " + b + " " + 1);
+				}
+			}
+		}
 	}
 
-	void edmondsKarps(int[][] edges) {
-		for (int[] e : edges) {
-			
+	int[][] edmondsKarp(int v, int s, int t, int[][] edges) {
+		int[][] c = new int[v][v];
+		int[][] f = new int[v][v];
+		int[][] cf = new int[v][v];
+
+		int[][] adjMatrix = new int[v][v];
+
+		for (int i = 0; i < edges.length; i++) {
+			int a = edges[i][0];
+			int b = edges[i][1];
+			c[a][b] = edges[i][2];
+			c[b][a] = -c[a][b];
+			f[a][b] = 0;
+			f[b][a] = 0;
+			cf[a][b] = c[a][b];
+			cf[b][a] = c[b][a];
 		}
+
+		while (true) {
+			int[] parents = new int[v];
+			if (!bfs(v, s, t, cf, parents)) {
+				break;
+			}
+
+			int r = 1; // Skippar check för det enda kapaciteten kan vara är 0 eller 1 och i et att > 1 pga. BFS.
+
+			int b = t;
+			while (b != s) {
+				int a = parents[b];
+
+				f[a][b] += r;
+				f[b][a] = -f[a][b];
+				cf[a][b] = c[a][b] -f[a][b];
+				cf[b][a] = c[b][a] -f[b][a];
+
+				b = a;
+			}
+		}
+
+		return f;
+	}
+
+	boolean bfs(int v, int s, int t, int[][] cf, int[] parents) {
+		boolean[] visited = new boolean[v];
+		Queue<Integer> queue = new PriorityQueue<>();
+		queue.add(s);
+		visited[s] = true;
+
+		while (!queue.isEmpty()) {
+			int u = queue.poll();
+
+			for (int i = 0; i < v; i++) {
+				if (!visited[i] && cf[u][i] > 0) {
+					queue.add(i);
+					visited[i] = true;
+					parents[i] = u;
+				}
+			}
+		}
+
+		return visited[t];
 	}
 
     void readMaxFlowSolution() {
@@ -137,6 +217,8 @@ public class BipRed {
 		readBipartiteGraph();
 
 		writeFlowGraph();
+
+		solveFlowProblem();
 
 		readMaxFlowSolution();
 
