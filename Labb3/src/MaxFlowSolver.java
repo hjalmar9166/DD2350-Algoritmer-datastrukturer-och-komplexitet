@@ -1,3 +1,4 @@
+import java.util.Arrays;
 import java.util.PriorityQueue;
 import java.util.Queue;
 
@@ -34,9 +35,17 @@ public class MaxFlowSolver {
         flow = -flow;
 
         io.println(s + " " + t + " " + flow);
-        io.println(3*flow);
-        for (int a = 0; a < v; a++) {
-            for (int b = 0; b < v; b++) {
+        int numPosEdges = 0;
+        for (int a = 1; a < v+1; a++) {
+            for (int b = 1; b < v+1; b++) {
+                if (f[a][b] > 0) {
+                    numPosEdges++;
+                }
+            }
+        }
+        io.println(numPosEdges);
+        for (int a = 1; a < v+1; a++) {
+            for (int b = 1; b < v+1; b++) {
                 if (f[a][b] > 0) {
                     io.println(a + " " + b + " " + f[a][b]);
                 }
@@ -46,9 +55,9 @@ public class MaxFlowSolver {
     }
 
     int[][] edmondsKarp(int v, int s, int t, int[][] edges) {
-        int[][] c = new int[v][v];
-        int[][] f = new int[v][v];
-        int[][] cf = new int[v][v];
+        int[][] c = new int[v+1][v+1];
+        int[][] f = new int[v+1][v+1];
+        int[][] cf = new int[v+1][v+1];
 
         for (int i = 0; i < edges.length; i++) {
             int a = edges[i][0];
@@ -62,13 +71,14 @@ public class MaxFlowSolver {
         }
 
         while (true) {
-            int[] parents = new int[v];
+            int[] parents = new int[v+1];
             if (!bfs(v, s, t, cf, parents)) {
                 break;
             }
 
             int r = -1;
             int b = t;
+            // Hitta flaskhals för flödet genom den funna stigen.
             while (b != s) {
                 int a = parents[b];
                 if (r == -1 || cf[a][b] < r) {
@@ -90,11 +100,20 @@ public class MaxFlowSolver {
             }
         }
 
+        tempPrintFlow(f);
+
         return f;
     }
 
+    void tempPrintFlow(int[][] f) {
+        for (int i = 0; i < f.length; i++) {
+            System.out.println(Arrays.toString(f[i]));
+        }
+        System.out.println("=====");
+    }
+
     boolean bfs(int v, int s, int t, int[][] cf, int[] parents) {
-        boolean[] visited = new boolean[v];
+        boolean[] visited = new boolean[v+1];
         Queue<Integer> queue = new PriorityQueue<>();
         queue.add(s);
         visited[s] = true;
@@ -102,7 +121,7 @@ public class MaxFlowSolver {
         while (!queue.isEmpty()) {
             int u = queue.poll();
 
-            for (int i = 0; i < v; i++) {
+            for (int i = 1; i < v+1; i++) {
                 if (!visited[i] && cf[u][i] > 0) {
                     queue.add(i);
                     visited[i] = true;
