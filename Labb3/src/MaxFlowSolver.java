@@ -1,6 +1,5 @@
-import java.util.Arrays;
-import java.util.PriorityQueue;
-import java.util.Queue;
+import java.util.*;
+import java.util.stream.IntStream;
 
 public class MaxFlowSolver {
     Kattio io;
@@ -29,7 +28,7 @@ public class MaxFlowSolver {
     void writeFlowSolution() {
         io.println(v);
         int flow = 0;
-        for (int i = 0; i < v; i++) {
+        for (int i = 0; i < v+1; i++) {
             flow += f[t][i];
         }
         flow = -flow;
@@ -59,11 +58,19 @@ public class MaxFlowSolver {
         int[][] f = new int[v+1][v+1];
         int[][] cf = new int[v+1][v+1];
 
+        LinkedList<Integer>[] adjLists = new LinkedList[v+1];
+        for (int i = 0; i < adjLists.length; i++) {
+            adjLists[i] = new LinkedList<>();
+        }
+
         for (int i = 0; i < edges.length; i++) {
             int a = edges[i][0];
             int b = edges[i][1];
+
+            adjLists[a].add(b);
+            adjLists[b].add(a);
+
             c[a][b] = edges[i][2];
-            c[b][a] = -c[a][b];
             f[a][b] = 0;
             f[b][a] = 0;
             cf[a][b] = c[a][b];
@@ -72,7 +79,7 @@ public class MaxFlowSolver {
 
         while (true) {
             int[] parents = new int[v+1];
-            if (!bfs(v, s, t, cf, parents)) {
+            if (!bfs(v, s, t, cf, parents, adjLists)) {
                 break;
             }
 
@@ -100,30 +107,21 @@ public class MaxFlowSolver {
             }
         }
 
-        tempPrintFlow(f);
-
         return f;
     }
 
-    void tempPrintFlow(int[][] f) {
-        for (int i = 0; i < f.length; i++) {
-            System.out.println(Arrays.toString(f[i]));
-        }
-        System.out.println("=====");
-    }
-
-    boolean bfs(int v, int s, int t, int[][] cf, int[] parents) {
+    boolean bfs(int v, int s, int t, int[][] cf, int[] parents, LinkedList<Integer>[] adjLists) {
         boolean[] visited = new boolean[v+1];
-        Queue<Integer> queue = new PriorityQueue<>();
-        queue.add(s);
+        Deque<Integer> queue = new ArrayDeque<>();
+        queue.addLast(s);
         visited[s] = true;
 
         while (!queue.isEmpty()) {
-            int u = queue.poll();
+            int u = queue.removeFirst();
 
-            for (int i = 1; i < v+1; i++) {
+            for (int i : adjLists[u]) {
                 if (!visited[i] && cf[u][i] > 0) {
-                    queue.add(i);
+                    queue.addLast(i);
                     visited[i] = true;
                     parents[i] = u;
                 }

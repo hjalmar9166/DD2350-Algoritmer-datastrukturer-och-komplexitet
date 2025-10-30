@@ -114,6 +114,10 @@ public class BipRed {
 		}
 		io.flush();
     }
+
+	void flowSolver() {
+
+	}
     
     BipRed() {
 		io = new Kattio(System.in, System.out);
@@ -121,6 +125,8 @@ public class BipRed {
 		readBipartiteGraph();
 
 		writeFlowGraph();
+
+		new MaxFlowSolver();
 
 		readMaxFlowSolution();
 
