@@ -1,5 +1,7 @@
 import com.sun.tools.javac.Main;
 import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.Map;
 import java.util.Random;
 
 public class Heuristic {
@@ -12,7 +14,7 @@ public class Heuristic {
     int[][] roles; // Skådespelare som kan spela en viss roll.
     int[][] scenes; // Roller som medverkar i en viss scen.
 
-    int[][] givenRoles;
+    Map<Integer, LinkedList<Integer>> givenRoles;
 
     /**
      * Läser in en probleminstans och lagrar nödvändig data.
@@ -79,16 +81,92 @@ public class Heuristic {
      */
     void solve() {
         int[] actorsPlayingRoles = new int[n];
-
-        setup(actorsPlayingRoles);
-        
-
+        boolean[][] shareScene = createRoleAdjacencyLists();
+        giveTheDivasTheirRoles(actorsPlayingRoles, shareScene);
+        giveActorsToRemainingRoles(actorsPlayingRoles, shareScene);
+        givenRoles = createListOfActorsWithRoles();
     }
 
-    void setup(int[] actorsPlayingRoles) {
-        for (int i = 0; i < n; i++) {
-            actorsPlayingRoles[i] = roles[i][rnd.nextInt(roles[i].length)];
+    boolean[][] createRoleAdjacencyLists() {
+        boolean[][] shareScene = new boolean[n][n];
+        for (int[] scene : scenes) {
+            addSceneToAdjList(shareScene, scene);
         }
+        return shareScene;
+    }
+
+    void addSceneToAdjList(boolean[][] shareScene, int[] scene) {
+        for (int i = 0; i < scene.length-1; i++) {
+            for (int j = i + 1; j < scene.length; j++) {
+                shareScene[i][j] = true;
+                shareScene[j][i] = true;
+            }
+        }
+    }
+
+    void giveTheDivasTheirRoles(int[] actorsPlayingRoles, boolean[][] shareScene) {
+        for (int i = 0; i < n; i++) {
+            if (roles[i][0] != 1) {
+                continue;
+            }
+
+            for (int j = 0; j < n; j++) {
+                if (j != i && (roles[j][0] == 2 || roles[j][1] == 2) && !shareScene[i][j]) {
+                    actorsPlayingRoles[i] = 1;
+                    actorsPlayingRoles[j] = 2;
+                    return;
+                }
+            }
+        }
+    }
+
+    void giveActorsToRemainingRoles(int[] actorsPlayingRoles, boolean[][] shareScene) {
+        int superActor = k + 1;
+        for (int i = 0; i < n; i++) {
+            if (actorsPlayingRoles[i] != 0) {
+                continue;
+            }
+
+            assignActorToRole(actorsPlayingRoles, shareScene, i, roles[i].length);
+
+            if (actorsPlayingRoles[i] == 0) {
+                actorsPlayingRoles[i] = superActor;
+                superActor++;
+            }
+        }
+    }
+
+    void assignActorToRole(int[] actorsPlayingRoles, boolean[][] shareScene, int roleNum, int numActorsForRole) {
+        for (int i = 0; i < numActorsForRole; i++) {
+            int actor = roles[roleNum][i];
+            boolean invalidAssignment = false; //shares scene with self or divas sharing scene
+            for (int j = 0; j < n; j++) {
+                if ((actor == 1 || actor == 2) && (actorsPlayingRoles[j] == 1 || actorsPlayingRoles[j] == 2)) {
+                    invalidAssignment = true;
+                }
+                if (shareScene[actor-1][j] && actorsPlayingRoles[j] == actor) {
+                    invalidAssignment = true;
+                }
+            }
+
+            if (!invalidAssignment) {
+                actorsPlayingRoles[roleNum] = actor;
+                break;
+            }
+        }
+    }
+
+    Map<Integer, LinkedList<Integer>> createListOfActorsWithRoles(int[] actorsPlayingRoles) {
+        Map<Integer, LinkedList<Integer>> rolesOfActors = new HashMap<>();
+        for (int i = 0; i < n; i++) {
+            LinkedList actorsRoles = rolesOfActors.get(actorsPlayingRoles[i]);
+            if (actorsRoles == null) {
+                actorsRoles = new LinkedList<>();
+            }
+            actorsRoles.add(i+1);
+        }
+
+        return rolesOfActors;
     }
 
     Heuristic() {
