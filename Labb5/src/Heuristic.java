@@ -1,11 +1,13 @@
 import com.sun.tools.javac.Main;
+
+import javax.sound.sampled.Line;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Random;
+import java.util.HashMap;
 
 public class Heuristic {
-    Random rnd = new Random();
     Kattio io;
 
     int n; // Antal roller
@@ -20,7 +22,6 @@ public class Heuristic {
      * Läser in en probleminstans och lagrar nödvändig data.
      */
     void read() {
-
         n = io.getInt();
         s = io.getInt();
         k = io.getInt();
@@ -37,6 +38,7 @@ public class Heuristic {
 
         scenes = new int[s][];
 
+
         for (int i = 0; i < s; i++) {
             int numRolesForScene = io.getInt();
             scenes[i] = new int[numRolesForScene];
@@ -50,27 +52,25 @@ public class Heuristic {
      * Skriver ut certifikat för probleminstans.
      */
     void write() {
-        int numActors = givenRoles.length;
+        io.println(givenRoles.size());
 
-        io.println(numActors);
-
-        for (int i = 0; i < numActors; i++) {
-            int numRoles = givenRoles[i].length;
-            if (numRoles > 0) {
-                io.println((i + 1) + " " + numRoles + " " + getActorsRoles(givenRoles[i]));
-            }
+        for (Map.Entry<Integer, LinkedList<Integer>> actor : givenRoles.entrySet()) {
+            int actNum = actor.getKey();
+            LinkedList<Integer> roles = actor.getValue();
+            io.println(actNum + " " + roles.size() + " " + getActorsRoles(roles));
         }
+        io.flush();
     }
 
     /**
      * Sätter ihop en textsträng med en av rollerna som en skådespelare tilldelats.
-     * @param givenRoles Int-lista med rollnummer.
+     * @param roles Int-lista med rollnummer.
      * @return Textsträng av rollistan.
      */
-    String getActorsRoles(int[] givenRoles) {
+    String getActorsRoles(LinkedList<Integer> roles) {
         String returnString = "";
-        for (int i = 0; i < givenRoles.length; i++) {
-            returnString += givenRoles[i] + " ";
+        for (int role : roles) {
+            returnString += role + " ";
         }
 
         return returnString;
@@ -84,40 +84,52 @@ public class Heuristic {
         boolean[][] shareScene = createRoleAdjacencyLists();
         giveTheDivasTheirRoles(actorsPlayingRoles, shareScene);
         giveActorsToRemainingRoles(actorsPlayingRoles, shareScene);
-        givenRoles = createListOfActorsWithRoles();
+        givenRoles = createListOfActorsWithRoles(actorsPlayingRoles);
     }
 
     boolean[][] createRoleAdjacencyLists() {
         boolean[][] shareScene = new boolean[n][n];
-        for (int[] scene : scenes) {
-            addSceneToAdjList(shareScene, scene);
+        for (int[] rolesInScene : scenes) {
+            addSceneToAdjList(shareScene, rolesInScene);
         }
         return shareScene;
     }
 
-    void addSceneToAdjList(boolean[][] shareScene, int[] scene) {
-        for (int i = 0; i < scene.length-1; i++) {
-            for (int j = i + 1; j < scene.length; j++) {
-                shareScene[i][j] = true;
-                shareScene[j][i] = true;
+    void addSceneToAdjList(boolean[][] shareScene, int[] rolesInScene) {
+        for (int i = 0; i < rolesInScene.length-1; i++) {
+            for (int j = i + 1; j < rolesInScene.length; j++) {
+                int role1 = rolesInScene[i]-1;
+                int role2 = rolesInScene[j]-1;
+                shareScene[role1][role2] = true;
+                shareScene[role2][role1] = true;
             }
         }
     }
 
     void giveTheDivasTheirRoles(int[] actorsPlayingRoles, boolean[][] shareScene) {
         for (int i = 0; i < n; i++) {
-            if (roles[i][0] != 1) {
+            if (!canBePlayedByDiva(roles[i], 1)) {
                 continue;
             }
 
             for (int j = 0; j < n; j++) {
-                if (j != i && (roles[j][0] == 2 || roles[j][1] == 2) && !shareScene[i][j]) {
+                if (j != i && canBePlayedByDiva(roles[j], 2) && !shareScene[i][j]) {
                     actorsPlayingRoles[i] = 1;
                     actorsPlayingRoles[j] = 2;
                     return;
                 }
             }
         }
+    }
+
+    boolean canBePlayedByDiva(int[] actors, int divaNum){
+        for (int i = 0; i < actors.length; i++) {
+            if (actors[i] == divaNum) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     void giveActorsToRemainingRoles(int[] actorsPlayingRoles, boolean[][] shareScene) {
@@ -141,10 +153,10 @@ public class Heuristic {
             int actor = roles[roleNum][i];
             boolean invalidAssignment = false; //shares scene with self or divas sharing scene
             for (int j = 0; j < n; j++) {
-                if ((actor == 1 || actor == 2) && (actorsPlayingRoles[j] == 1 || actorsPlayingRoles[j] == 2)) {
+                if ((actor == 1 || actor == 2) && shareScene[roleNum][j] && (actorsPlayingRoles[j] == 1 || actorsPlayingRoles[j] == 2)) {
                     invalidAssignment = true;
                 }
-                if (shareScene[actor-1][j] && actorsPlayingRoles[j] == actor) {
+                if (shareScene[roleNum][j] && actorsPlayingRoles[j] == actor) {
                     invalidAssignment = true;
                 }
             }
@@ -159,23 +171,25 @@ public class Heuristic {
     Map<Integer, LinkedList<Integer>> createListOfActorsWithRoles(int[] actorsPlayingRoles) {
         Map<Integer, LinkedList<Integer>> rolesOfActors = new HashMap<>();
         for (int i = 0; i < n; i++) {
-            LinkedList actorsRoles = rolesOfActors.get(actorsPlayingRoles[i]);
+            LinkedList<Integer> actorsRoles = rolesOfActors.get(actorsPlayingRoles[i]);
             if (actorsRoles == null) {
                 actorsRoles = new LinkedList<>();
             }
             actorsRoles.add(i+1);
+            rolesOfActors.put(actorsPlayingRoles[i], actorsRoles);
         }
 
         return rolesOfActors;
     }
 
     Heuristic() {
+        io = new Kattio(System.in, System.out);
         read();
         solve();
         write();
     }
 
-    void main(String[] args) {
-        io = new Kattio(System.in, System.out);
+    public static void main(String[] args) {
+        new Heuristic();
     }
 }
